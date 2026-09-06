@@ -166,6 +166,10 @@ export async function multipartUpload(
     headers,
     method: "POST",
   });
+  if (!uploadResponse.ok)
+    throw new Error(
+      `Upload failed: ${uploadResponse.status} ${await uploadResponse.text()}`
+    );
   const { uploadId } = await uploadResponse.json<{ uploadId: string }>();
   const totalChunks = Math.ceil(file.size / SIZE_LIMIT);
 
@@ -206,6 +210,10 @@ export async function multipartUpload(
           })
           .catch(uploadPart);
       const response = await [1, 2].reduce(retryReducer, uploadPart());
+      if (!response.ok)
+        throw new Error(
+          `Upload failed: ${response.status} ${await response.text()}`
+        );
       return { partNumber: i, etag: response.headers.get("etag")! };
     })
   );
@@ -225,26 +233,30 @@ export async function copyPaste(source: string, target: string, move = false) {
     `${WEBDAV_ENDPOINT}${encodeKey(target)}`,
     window.location.href
   );
-  await fetch(uploadUrl, {
+  const response = await fetch(uploadUrl, {
     method: move ? "MOVE" : "COPY",
     headers: { Destination: destinationUrl.href },
   });
+  if (!response.ok)
+    throw new Error(
+      `${move ? "Rename" : "Copy"} failed: ${response.status} ${await response.text()}`
+    );
 }
 
 export async function createFolder(cwd: string) {
-  try {
-    const folderName = window.prompt("Folder name");
-    if (!folderName) return;
-    if (folderName.includes("/")) {
-      window.alert("Invalid folder name");
-      return;
-    }
-    const folderKey = `${cwd}${folderName}`;
-    const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(folderKey)}`;
-    await fetch(uploadUrl, { method: "MKCOL" });
-  } catch (error) {
-    console.log(`Create folder failed`);
+  const folderName = window.prompt("Folder name");
+  if (!folderName) return;
+  if (folderName.includes("/")) {
+    window.alert("Invalid folder name");
+    return;
   }
+  const folderKey = `${cwd}${folderName}`;
+  const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(folderKey)}`;
+  const response = await fetch(uploadUrl, { method: "MKCOL" });
+  if (!response.ok)
+    throw new Error(
+      `Create folder failed: ${response.status} ${await response.text()}`
+    );
 }
 
 export async function processTransferTask({
@@ -291,11 +303,14 @@ export async function processTransferTask({
     });
   } else {
     const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(remoteKey)}`;
-    return await xhrFetch(uploadUrl, {
+    const response = await xhrFetch(uploadUrl, {
       method: "PUT",
       headers,
       body: file,
       onUploadProgress: onTaskProgress,
     });
+    if (!response.ok)
+      throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+    return response;
   }
 }

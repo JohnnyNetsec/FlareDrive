@@ -59,11 +59,13 @@ function UploadDrawer({
   setOpen,
   cwd,
   onUpload,
+  onError,
 }: {
   open: boolean;
   setOpen: (open: boolean) => void;
   cwd: string;
   onUpload: () => void;
+  onError: (error: Error) => void;
 }) {
   const uploadEnqueue = useUploadEnqueue();
 
@@ -136,7 +138,11 @@ function UploadDrawer({
               caption="Create Folder"
               onClick={async () => {
                 setOpen(false);
-                await createFolder(cwd);
+                try {
+                  await createFolder(cwd);
+                } catch (error) {
+                  onError(error as Error);
+                }
                 onUpload();
               }}
             />

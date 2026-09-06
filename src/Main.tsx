@@ -226,6 +226,7 @@ function Main({
         setOpen={setShowUploadDrawer}
         cwd={cwd}
         onUpload={fetchFiles}
+        onError={onError}
       />
 
       <TextPadDrawer
@@ -249,7 +250,11 @@ function Main({
           if (multiSelected?.length !== 1) return;
           const newName = window.prompt("Rename to:");
           if (!newName) return;
-          await copyPaste(multiSelected[0], cwd + newName, true);
+          try {
+            await copyPaste(multiSelected[0], cwd + newName, true);
+          } catch (error) {
+            onError(error as Error);
+          }
           fetchFiles();
         }}
         onDelete={async () => {
@@ -259,8 +264,15 @@ function Main({
             .join("\n");
           const confirmMessage = "Delete the following file(s) permanently?";
           if (!window.confirm(`${confirmMessage}\n${filenames}`)) return;
-          for (const key of multiSelected)
-            await fetch(`/webdav/${encodeKey(key)}`, { method: "DELETE" });
+          const failed: string[] = [];
+          for (const key of multiSelected) {
+            const response = await fetch(`/webdav/${encodeKey(key)}`, {
+              method: "DELETE",
+            });
+            if (!response.ok) failed.push(key.split("/").pop()!);
+          }
+          if (failed.length)
+            onError(new Error(`Failed to delete: ${failed.join(", ")}`));
           fetchFiles();
         }}
         onShare={async () => {
