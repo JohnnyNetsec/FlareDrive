@@ -10,9 +10,12 @@ Maintained by [NETSEC](https://51sec.org).
 
 ### File management
 
+- Upload via drag-and-drop, or the upload menu's Camera capture (mobile),
+  Image/Video picker, or any-file picker
 - Upload large files (chunked upload for files ≥100MB)
-- Drag and drop upload
 - Create folders
+- TextPad: write a quick note and save it straight to the current folder
+  as a `.txt` file, without needing a separate file to upload
 - Move and Copy files/folders between folders, via a folder-picker dialog
 - Rename, delete (with confirmation), and multi-select all of the above
 - Search files by name
@@ -25,6 +28,8 @@ Maintained by [NETSEC](https://51sec.org).
 - Selection shortcuts: right-click or long-press (touch) to select,
   Ctrl/Cmd-click to toggle one item, Shift-click for a range, "Select all",
   and keyboard shortcuts (Delete/Backspace, Escape, Ctrl/Cmd+A)
+- Progress dialog (Downloads/Uploads tabs) showing per-file status, with
+  the failure reason on hover if one fails
 - Item count and total size shown for the current folder
 - WebDAV endpoint for use with any WebDAV-compatible client
 
