@@ -19,6 +19,7 @@ import TextPadDrawer from "./TextPadDrawer";
 import { copyPaste, describeHttpError, fetchPath } from "./app/transfer";
 import { Notice } from "./app/utils";
 import { useTransferQueue, useUploadEnqueue } from "./app/transferQueue";
+import type { SortKey } from "./App";
 
 // Centered helper
 function Centered({ children }: { children: React.ReactNode }) {
@@ -114,9 +115,11 @@ function DropZone({
 // Main Component
 function Main({
   search,
+  sortBy,
   onError,
 }: {
   search: string;
+  sortBy: SortKey;
   onError: (error: Error) => void;
 }) {
   const [cwd, setCwd] = useState("");
@@ -157,16 +160,32 @@ function Main({
     }
   }, [cwd, fetchFiles, lastUploadKey, transferQueue]);
 
-  const filteredFiles = useMemo(
-    () =>
-      (search
-        ? files.filter((file) =>
-            file.key.toLowerCase().includes(search.toLowerCase())
-          )
-        : files
-      ).sort((a, b) => (isDirectory(a) ? -1 : isDirectory(b) ? 1 : 0)),
-    [files, search]
-  );
+  const filteredFiles = useMemo(() => {
+    const matches = search
+      ? files.filter((file) =>
+          file.key.toLowerCase().includes(search.toLowerCase())
+        )
+      : files;
+    const compareBySortKey = (a: FileItem, b: FileItem) => {
+      switch (sortBy) {
+        case "date":
+          return (
+            new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime()
+          );
+        case "size":
+          return b.size - a.size;
+        default:
+          return a.key.localeCompare(b.key, undefined, { numeric: true });
+      }
+    };
+    return [...matches].sort((a, b) =>
+      isDirectory(a) === isDirectory(b)
+        ? compareBySortKey(a, b)
+        : isDirectory(a)
+          ? -1
+          : 1
+    );
+  }, [files, search, sortBy]);
 
   const handleMultiSelect = useCallback((key: string) => {
     setMultiSelected((prev) => {
@@ -200,7 +219,11 @@ function Main({
             onCwdChange={(newCwd: string) => setCwd(newCwd)}
             multiSelected={multiSelected}
             onMultiSelect={handleMultiSelect}
-            emptyMessage={<Centered>No files or folders</Centered>}
+            emptyMessage={
+              <Centered>
+                {search ? `No results for "${search}"` : "No files or folders"}
+              </Centered>
+            }
           />
         </DropZone>
       )}

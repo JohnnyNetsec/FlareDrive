@@ -26,8 +26,11 @@ const theme = createTheme({
   palette: { primary: { main: "#f38020" } },
 });
 
+export type SortKey = "name" | "date" | "size";
+
 function App() {
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortKey>("name");
   const [showProgressDialog, setShowProgressDialog] = React.useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -40,9 +43,11 @@ function App() {
           <Header
             search={search}
             onSearchChange={(newSearch: string) => setSearch(newSearch)}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
             setShowProgressDialog={setShowProgressDialog}
           />
-          <Main search={search} onError={setError} />
+          <Main search={search} sortBy={sortBy} onError={setError} />
           <Footer />
         </Stack>
         <Snackbar

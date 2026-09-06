@@ -5,62 +5,84 @@ import {
   InputBase,
   Menu,
   MenuItem,
+  ListItemIcon,
+  ListItemText,
   Toolbar,
   Tooltip,
-  Typography,
 } from "@mui/material";
 import { useState } from "react";
 import {
+  Check as CheckIcon,
+  Clear as ClearIcon,
   GitHub as GitHubIcon,
   MoreHoriz as MoreHorizIcon,
+  Search as SearchIcon,
 } from "@mui/icons-material";
 import { AUTHOR_NAME, GITHUB_URL, copyrightYearRange } from "./copyright";
+import type { SortKey } from "./App";
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "name", label: "Name" },
+  { key: "date", label: "Date modified" },
+  { key: "size", label: "Size" },
+];
 
 function Header({
   search,
   onSearchChange,
+  sortBy,
+  onSortChange,
   setShowProgressDialog,
 }: {
   search: string;
   onSearchChange: (newSearch: string) => void;
+  sortBy: SortKey;
+  onSortChange: (sortBy: SortKey) => void;
   setShowProgressDialog: (show: boolean) => void;
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   return (
     <Toolbar disableGutters sx={{ padding: 1 }}>
-      <Tooltip title={`© ${copyrightYearRange()} FlareDrive · ${AUTHOR_NAME}`}>
-        <Typography
-          variant="subtitle1"
-          noWrap
-          sx={{ paddingX: 1, cursor: "default" }}
-        >
-          FlareDrive
-        </Typography>
-      </Tooltip>
+      <SearchIcon color="action" sx={{ marginX: 1 }} />
       <InputBase
         size="small"
         fullWidth
-        placeholder="Search…"
+        placeholder="Search"
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
+        endAdornment={
+          search && (
+            <IconButton
+              aria-label="Clear search"
+              size="small"
+              onClick={() => onSearchChange("")}
+            >
+              <ClearIcon fontSize="small" />
+            </IconButton>
+          )
+        }
         sx={{
           backgroundColor: "whitesmoke",
           borderRadius: "999px",
-          padding: "8px 16px",
+          padding: "4px 8px 4px 16px",
         }}
       />
-      <IconButton
-        aria-label="GitHub repository"
-        color="inherit"
-        component="a"
-        href={GITHUB_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        sx={{ marginLeft: 0.5 }}
+      <Tooltip
+        title={`© ${copyrightYearRange()} FlareDrive · ${AUTHOR_NAME} — view on GitHub`}
       >
-        <GitHubIcon />
-      </IconButton>
+        <IconButton
+          aria-label="GitHub repository"
+          color="inherit"
+          component="a"
+          href={GITHUB_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          sx={{ marginLeft: 0.5 }}
+        >
+          <GitHubIcon />
+        </IconButton>
+      </Tooltip>
       <IconButton
         aria-label="More"
         color="inherit"
@@ -74,8 +96,21 @@ function Header({
         open={Boolean(anchorEl)}
         onClose={() => setAnchorEl(null)}
       >
-        <MenuItem>View as</MenuItem>
-        <MenuItem>Sort by</MenuItem>
+        {SORT_OPTIONS.map(({ key, label }) => (
+          <MenuItem
+            key={key}
+            selected={sortBy === key}
+            onClick={() => {
+              onSortChange(key);
+              setAnchorEl(null);
+            }}
+          >
+            <ListItemIcon>
+              {sortBy === key && <CheckIcon fontSize="small" />}
+            </ListItemIcon>
+            <ListItemText>Sort by {label}</ListItemText>
+          </MenuItem>
+        ))}
         <MenuItem
           onClick={() => {
             setAnchorEl(null);
