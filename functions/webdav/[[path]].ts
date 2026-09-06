@@ -72,12 +72,17 @@ export const onRequest: PagesFunction<{
 
   const isReadMethod = ["GET", "HEAD", "PROPFIND"].includes(request.method);
   const isThumbnail = path.startsWith("_$flaredrive$/thumbnails/");
+  const isRoot = path === "";
   const publicFolders = parsePublicFolders(env.WEBDAV_PUBLIC_FOLDERS);
 
+  // The root listing itself is always public so the site loads without a
+  // login prompt. It only exposes folder/file NAMES at the top level, not
+  // the contents of folders that aren't in WEBDAV_PUBLIC_FOLDERS.
   const skipAuth =
     isReadMethod &&
     (env.WEBDAV_PUBLIC_READ === "1" ||
       isThumbnail ||
+      isRoot ||
       isUnderPublicFolder(path, publicFolders));
 
   if (!skipAuth) {
