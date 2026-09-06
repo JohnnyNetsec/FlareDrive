@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 FlareDrive contributors.
+// Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 NETSEC (https://51sec.org).
 // SPDX-License-Identifier: MIT
 import {
   IconButton,
@@ -14,7 +14,7 @@ import {
   GitHub as GitHubIcon,
   MoreHoriz as MoreHorizIcon,
 } from "@mui/icons-material";
-import { GITHUB_URL, copyrightYearRange } from "./copyright";
+import { AUTHOR_NAME, GITHUB_URL, copyrightYearRange } from "./copyright";
 
 function Header({
   search,
@@ -29,7 +29,7 @@ function Header({
 
   return (
     <Toolbar disableGutters sx={{ padding: 1 }}>
-      <Tooltip title={`© ${copyrightYearRange()} FlareDrive`}>
+      <Tooltip title={`© ${copyrightYearRange()} FlareDrive · ${AUTHOR_NAME}`}>
         <Typography
           variant="subtitle1"
           noWrap

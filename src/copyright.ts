@@ -1,6 +1,8 @@
-// Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 FlareDrive contributors.
+// Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 NETSEC (https://51sec.org).
 // SPDX-License-Identifier: MIT
 export const GITHUB_URL = "https://github.com/JohnnyNetsec/FlareDrive";
+export const AUTHOR_NAME = "NETSEC";
+export const AUTHOR_URL = "https://51sec.org";
 
 const FIRST_YEAR = 2024;
 

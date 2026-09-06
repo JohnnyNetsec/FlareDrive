@@ -1,7 +1,12 @@
-// Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 FlareDrive contributors.
+// Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 NETSEC (https://51sec.org).
 // SPDX-License-Identifier: MIT
 import { Box, Link, Typography } from "@mui/material";
-import { GITHUB_URL, copyrightYearRange } from "./copyright";
+import {
+  AUTHOR_NAME,
+  AUTHOR_URL,
+  GITHUB_URL,
+  copyrightYearRange,
+} from "./copyright";
 
 function Footer() {
   return (
@@ -16,6 +21,15 @@ function Footer() {
     >
       <Typography variant="caption" color="text.secondary">
         © {copyrightYearRange()} FlareDrive ·{" "}
+        <Link
+          href={AUTHOR_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          color="inherit"
+        >
+          {AUTHOR_NAME}
+        </Link>{" "}
+        ·{" "}
         <Link
           href={GITHUB_URL}
           target="_blank"
