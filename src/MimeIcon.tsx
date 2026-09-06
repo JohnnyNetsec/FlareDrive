@@ -9,24 +9,30 @@ import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutl
 import PdfIcon from "@mui/icons-material/PictureAsPdf";
 import VideoFileIcon from "@mui/icons-material/VideoFile";
 
-function MimeIcon({ contentType }: { contentType: string }) {
-  const fallbackIcon = <InsertDriveFileOutlinedIcon fontSize="large" />;
+function MimeIcon({
+  contentType,
+  fontSize = "large",
+}: {
+  contentType: string;
+  fontSize?: "small" | "medium" | "large";
+}) {
+  const fallbackIcon = <InsertDriveFileOutlinedIcon fontSize={fontSize} />;
   if (typeof contentType !== "string") return fallbackIcon;
 
   return contentType.startsWith("image/") ? (
-    <ImageIcon fontSize="large" />
+    <ImageIcon fontSize={fontSize} />
   ) : contentType.startsWith("audio/") ? (
-    <AudioFileIcon fontSize="large" />
+    <AudioFileIcon fontSize={fontSize} />
   ) : contentType.startsWith("video/") ? (
-    <VideoFileIcon fontSize="large" />
+    <VideoFileIcon fontSize={fontSize} />
   ) : contentType === "application/pdf" ? (
-    <PdfIcon fontSize="large" />
+    <PdfIcon fontSize={fontSize} />
   ) : ["application/zip", "application/gzip"].includes(contentType) ? (
-    <FolderZipOutlinedIcon fontSize="large" />
+    <FolderZipOutlinedIcon fontSize={fontSize} />
   ) : contentType.startsWith("text/") ? (
-    <CodeIcon fontSize="large" />
+    <CodeIcon fontSize={fontSize} />
   ) : contentType === "application/x-directory" ? (
-    <FolderIcon fontSize="large" />
+    <FolderIcon fontSize={fontSize} />
   ) : (
     fallbackIcon
   );

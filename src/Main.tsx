@@ -26,7 +26,7 @@ import TextPadDrawer from "./TextPadDrawer";
 import { copyPaste, describeHttpError, fetchPath } from "./app/transfer";
 import { Notice } from "./app/utils";
 import { useTransferQueue, useUploadEnqueue } from "./app/transferQueue";
-import type { SortKey } from "./App";
+import type { SortKey, ViewMode } from "./App";
 
 // Centered helper
 function Centered({ children }: { children: React.ReactNode }) {
@@ -123,10 +123,12 @@ function DropZone({
 function Main({
   search,
   sortBy,
+  viewMode,
   onError,
 }: {
   search: string;
   sortBy: SortKey;
+  viewMode: ViewMode;
   onError: (error: Error) => void;
 }) {
   const [cwd, setCwd] = useState("");
@@ -246,6 +248,7 @@ function Main({
             onCwdChange={(newCwd: string) => setCwd(newCwd)}
             multiSelected={multiSelected}
             onMultiSelect={handleMultiSelect}
+            viewMode={viewMode}
             emptyMessage={
               <Centered>
                 {search ? `No results for "${search}"` : "No files or folders"}

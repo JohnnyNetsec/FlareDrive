@@ -39,7 +39,8 @@ function MultiSelectToolbar({
           right: 0,
           zIndex: 100,
           backgroundColor: (theme) => theme.palette.background.paper,
-          borderTop: "1px solid lightgray",
+          borderTop: "1px solid",
+          borderColor: "divider",
           justifyContent: "space-evenly",
         }}
       >

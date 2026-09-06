@@ -1,12 +1,15 @@
 // Copyright (c) 2024-2026 NETSEC (https://51sec.org).
 // SPDX-License-Identifier: MIT
 import {
+  Box,
+  Divider,
   IconButton,
   InputBase,
   Menu,
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Switch,
   Toolbar,
   Tooltip,
 } from "@mui/material";
@@ -14,7 +17,9 @@ import { useState } from "react";
 import {
   Check as CheckIcon,
   Clear as ClearIcon,
+  DarkMode as DarkModeIcon,
   GitHub as GitHubIcon,
+  LightMode as LightModeIcon,
   Logout as LogoutIcon,
   MoreHoriz as MoreHorizIcon,
   Search as SearchIcon,
@@ -22,7 +27,7 @@ import {
 import { AUTHOR_NAME, GITHUB_URL, copyrightYearRange } from "./copyright";
 import { logout } from "./app/transfer";
 import { Notice } from "./app/utils";
-import type { SortKey } from "./App";
+import type { SortKey, ThemeMode, ViewMode } from "./App";
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
@@ -30,11 +35,21 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "size", label: "Size" },
 ];
 
+const VIEW_OPTIONS: { key: ViewMode; label: string }[] = [
+  { key: "large", label: "Large icons" },
+  { key: "small", label: "Small icons" },
+  { key: "details", label: "Details" },
+];
+
 function Header({
   search,
   onSearchChange,
   sortBy,
   onSortChange,
+  viewMode,
+  onViewModeChange,
+  themeMode,
+  onThemeModeChange,
   setShowProgressDialog,
   onNotify,
 }: {
@@ -42,6 +57,10 @@ function Header({
   onSearchChange: (newSearch: string) => void;
   sortBy: SortKey;
   onSortChange: (sortBy: SortKey) => void;
+  viewMode: ViewMode;
+  onViewModeChange: (viewMode: ViewMode) => void;
+  themeMode: ThemeMode;
+  onThemeModeChange: (mode: ThemeMode) => void;
   setShowProgressDialog: (show: boolean) => void;
   onNotify: (error: Error) => void;
 }) {
@@ -52,7 +71,6 @@ function Header({
       <SearchIcon color="action" sx={{ marginX: 1 }} />
       <InputBase
         size="small"
-        fullWidth
         placeholder="Search"
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
@@ -68,11 +86,26 @@ function Header({
           )
         }
         sx={{
-          backgroundColor: "whitesmoke",
+          width: { xs: 140, sm: 220 },
+          backgroundColor: (theme) =>
+            theme.palette.mode === "dark" ? "grey.800" : "whitesmoke",
           borderRadius: "999px",
           padding: "4px 8px 4px 16px",
         }}
       />
+
+      <Box sx={{ flexGrow: 1 }} />
+
+      <Tooltip title="Toggle dark / light theme">
+        <Switch
+          checked={themeMode === "dark"}
+          onChange={(e) => onThemeModeChange(e.target.checked ? "dark" : "light")}
+          icon={<LightModeIcon fontSize="small" sx={{ padding: "1px" }} />}
+          checkedIcon={<DarkModeIcon fontSize="small" sx={{ padding: "1px" }} />}
+          inputProps={{ "aria-label": "Toggle dark / light theme" }}
+        />
+      </Tooltip>
+
       <Tooltip
         title={`© ${copyrightYearRange()} FlareDrive · ${AUTHOR_NAME} — view on GitHub`}
       >
@@ -101,6 +134,22 @@ function Header({
         open={Boolean(anchorEl)}
         onClose={() => setAnchorEl(null)}
       >
+        {VIEW_OPTIONS.map(({ key, label }) => (
+          <MenuItem
+            key={key}
+            selected={viewMode === key}
+            onClick={() => {
+              onViewModeChange(key);
+              setAnchorEl(null);
+            }}
+          >
+            <ListItemIcon>
+              {viewMode === key && <CheckIcon fontSize="small" />}
+            </ListItemIcon>
+            <ListItemText>{label}</ListItemText>
+          </MenuItem>
+        ))}
+        <Divider />
         {SORT_OPTIONS.map(({ key, label }) => (
           <MenuItem
             key={key}
@@ -116,6 +165,7 @@ function Header({
             <ListItemText>Sort by {label}</ListItemText>
           </MenuItem>
         ))}
+        <Divider />
         <MenuItem
           onClick={() => {
             setAnchorEl(null);
