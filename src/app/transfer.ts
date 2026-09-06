@@ -9,6 +9,8 @@ const WEBDAV_ENDPOINT = "/webdav/";
 
 export function describeHttpError(status: number, action: string): string {
   switch (status) {
+    case 400:
+      return `${action} failed: invalid destination (400) — a folder can't be moved into itself or its own subfolder.`;
     case 401:
       return `${action} failed: authentication required (401). Sign in with the WebDAV username/password when prompted.`;
     case 403:
@@ -270,7 +272,12 @@ export async function multipartUpload(
   return response;
 }
 
-export async function copyPaste(source: string, target: string, move = false) {
+export async function copyPaste(
+  source: string,
+  target: string,
+  move = false,
+  actionLabel?: string
+) {
   const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(source)}`;
   const destinationUrl = new URL(
     `${WEBDAV_ENDPOINT}${encodeKey(target)}`,
@@ -282,7 +289,7 @@ export async function copyPaste(source: string, target: string, move = false) {
   });
   if (!response.ok)
     throw new Error(
-      describeHttpError(response.status, move ? "Rename" : "Copy")
+      describeHttpError(response.status, actionLabel ?? (move ? "Rename" : "Copy"))
     );
 }
 

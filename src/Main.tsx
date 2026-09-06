@@ -19,6 +19,7 @@ import {
 import { Home as HomeIcon, NoteAdd as NoteAddIcon } from "@mui/icons-material";
 
 import FileGrid, { encodeKey, FileItem, isDirectory } from "./FileGrid";
+import FolderPickerDialog from "./FolderPickerDialog";
 import MultiSelectToolbar from "./MultiSelectToolbar";
 import UploadDrawer, { UploadFab } from "./UploadDrawer";
 import TextPadDrawer from "./TextPadDrawer";
@@ -134,6 +135,7 @@ function Main({
   const [multiSelected, setMultiSelected] = useState<string[] | null>(null);
   const [showUploadDrawer, setShowUploadDrawer] = useState(false);
   const [showTextPadDrawer, setShowTextPadDrawer] = useState(false);
+  const [showMovePicker, setShowMovePicker] = useState(false);
   const [lastUploadKey, setLastUploadKey] = useState<string | null>(null);
 
   const transferQueue = useTransferQueue();
@@ -370,6 +372,44 @@ function Main({
           }
 
           window.prompt("Copy this link:", shareUrl);
+        }}
+        onMove={() => {
+          if (!multiSelected?.length) return;
+          setShowMovePicker(true);
+        }}
+      />
+
+      <FolderPickerDialog
+        open={showMovePicker}
+        initialPath={cwd}
+        title={`Move ${multiSelected?.length ?? 0} item(s) to…`}
+        onClose={() => setShowMovePicker(false)}
+        onConfirm={async (destination) => {
+          setShowMovePicker(false);
+          if (!multiSelected?.length) return;
+          let firstError: string | null = null;
+          const failed: string[] = [];
+          for (const key of multiSelected) {
+            const name = key.replace(/\/$/, "").split("/").pop()!;
+            try {
+              await copyPaste(key, destination + name, true, "Move");
+            } catch (error) {
+              failed.push(name);
+              firstError ??= (error as Error).message;
+            }
+          }
+          if (failed.length)
+            onError(new Error(`${firstError} (${failed.join(", ")})`));
+          else
+            onError(
+              new Notice(
+                `Moved ${multiSelected.length} item(s) to ${
+                  destination ? `/${destination.replace(/\/$/, "")}` : "root"
+                }`,
+                "success"
+              )
+            );
+          fetchFiles();
         }}
       />
     </>

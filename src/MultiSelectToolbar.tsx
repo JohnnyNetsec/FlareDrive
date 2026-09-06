@@ -5,6 +5,7 @@ import { IconButton, Menu, MenuItem, Slide, Toolbar } from "@mui/material";
 import {
   Close as CloseIcon,
   Delete as DeleteIcon,
+  DriveFileMove as DriveFileMoveIcon,
   Download as DownloadIcon,
   MoreHoriz as MoreHorizIcon,
 } from "@mui/icons-material";
@@ -16,6 +17,7 @@ function MultiSelectToolbar({
   onRename,
   onDelete,
   onShare,
+  onMove,
 }: {
   multiSelected: string[] | null;
   onClose: () => void;
@@ -23,6 +25,7 @@ function MultiSelectToolbar({
   onRename: () => void;
   onDelete: () => void;
   onShare: () => void;
+  onMove: () => void;
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -51,6 +54,13 @@ function MultiSelectToolbar({
           onClick={onDownload}
         >
           <DownloadIcon />
+        </IconButton>
+        <IconButton
+          color="primary"
+          disabled={!multiSelected?.length}
+          onClick={onMove}
+        >
+          <DriveFileMoveIcon />
         </IconButton>
         <IconButton color="primary" onClick={onDelete}>
           <DeleteIcon />
