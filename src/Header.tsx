@@ -1,6 +1,11 @@
 import { IconButton, InputBase, Menu, MenuItem, Toolbar } from "@mui/material";
 import { useState } from "react";
-import { MoreHoriz as MoreHorizIcon } from "@mui/icons-material";
+import {
+  GitHub as GitHubIcon,
+  MoreHoriz as MoreHorizIcon,
+} from "@mui/icons-material";
+
+const GITHUB_URL = "https://github.com/JohnnyNetsec/FlareDrive";
 
 function Header({
   search,
@@ -27,6 +32,17 @@ function Header({
           padding: "8px 16px",
         }}
       />
+      <IconButton
+        aria-label="GitHub repository"
+        color="inherit"
+        component="a"
+        href={GITHUB_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        sx={{ marginLeft: 0.5 }}
+      >
+        <GitHubIcon />
+      </IconButton>
       <IconButton
         aria-label="More"
         color="inherit"

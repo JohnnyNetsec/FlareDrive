@@ -263,13 +263,34 @@ function Main({
             await fetch(`/webdav/${encodeKey(key)}`, { method: "DELETE" });
           fetchFiles();
         }}
-        onShare={() => {
+        onShare={async () => {
           if (multiSelected?.length !== 1) return;
           const url = new URL(
             `/webdav/${encodeKey(multiSelected[0])}`,
             window.location.href
           );
-          navigator.share({ url: url.toString() });
+          const shareUrl = url.toString();
+
+          if (navigator.share) {
+            try {
+              await navigator.share({ url: shareUrl });
+              return;
+            } catch (error) {
+              if ((error as Error)?.name === "AbortError") return;
+            }
+          }
+
+          if (navigator.clipboard?.writeText) {
+            try {
+              await navigator.clipboard.writeText(shareUrl);
+              onError(new Error("Link copied to clipboard"));
+              return;
+            } catch (error) {
+              // Fall through to the prompt fallback below.
+            }
+          }
+
+          window.prompt("Copy this link:", shareUrl);
         }}
       />
     </>

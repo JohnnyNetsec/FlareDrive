@@ -8,6 +8,7 @@ import {
 } from "@mui/material";
 import React, { useState } from "react";
 
+import Footer from "./Footer";
 import Header from "./Header";
 import Main from "./Main";
 import ProgressDialog from "./ProgressDialog";
@@ -38,6 +39,7 @@ function App() {
             setShowProgressDialog={setShowProgressDialog}
           />
           <Main search={search} onError={setError} />
+          <Footer />
         </Stack>
         <Snackbar
           autoHideDuration={5000}

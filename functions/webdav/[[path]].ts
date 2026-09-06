@@ -38,18 +38,42 @@ const HANDLERS: Record<
   DELETE: handleRequestDelete,
 };
 
+// Folder paths (relative to the bucket root, no leading/trailing slash) that
+// are readable without authentication, e.g. "guest,test/samples".
+function parsePublicFolders(value?: string): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((folder) => folder.trim().replace(/^\/+|\/+$/g, ""))
+    .filter(Boolean);
+}
+
+function isUnderPublicFolder(path: string, publicFolders: string[]): boolean {
+  return publicFolders.some(
+    (folder) => path === folder || path.startsWith(`${folder}/`)
+  );
+}
+
 export const onRequest: PagesFunction<{
   WEBDAV_USERNAME: string;
   WEBDAV_PASSWORD: string;
   WEBDAV_PUBLIC_READ?: string;
+  WEBDAV_PUBLIC_FOLDERS?: string;
 }> = async function (context) {
   const env = context.env;
   const request: Request = context.request;
   if (request.method === "OPTIONS") return handleRequestOptions();
 
+  const [bucket, path] = parseBucketPath(context);
+
+  const isReadMethod = ["GET", "HEAD", "PROPFIND"].includes(request.method);
+  const isThumbnail = path.startsWith("_$flaredrive$/thumbnails/");
+  const publicFolders = parsePublicFolders(env.WEBDAV_PUBLIC_FOLDERS);
+
   const skipAuth =
-    env.WEBDAV_PUBLIC_READ === "1" &&
-    ["GET", "HEAD", "PROPFIND"].includes(request.method);
+    isReadMethod &&
+    (env.WEBDAV_PUBLIC_READ === "1" ||
+      isThumbnail ||
+      isUnderPublicFolder(path, publicFolders));
 
   if (!skipAuth) {
     if (!env.WEBDAV_USERNAME || !env.WEBDAV_PASSWORD)
@@ -69,7 +93,6 @@ export const onRequest: PagesFunction<{
       return new Response("Unauthorized", { status: 401 });
   }
 
-  const [bucket, path] = parseBucketPath(context);
   if (!bucket) return notFound();
 
   const method: string = (context.request as Request).method;
