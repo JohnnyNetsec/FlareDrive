@@ -41,7 +41,8 @@ const HANDLERS: Record<
 };
 
 // Folder paths (relative to the bucket root, no leading/trailing slash) that
-// are readable without authentication, e.g. "guest,test/samples".
+// are readable without authentication, e.g. "guest,test/samples". Matching is
+// case-insensitive, so "Guest" or "GUEST" also count as the "guest" folder.
 function parsePublicFolders(value?: string): string[] {
   return (value ?? "")
     .split(",")
@@ -50,9 +51,11 @@ function parsePublicFolders(value?: string): string[] {
 }
 
 function isUnderPublicFolder(path: string, publicFolders: string[]): boolean {
-  return publicFolders.some(
-    (folder) => path === folder || path.startsWith(`${folder}/`)
-  );
+  const lowerPath = path.toLowerCase();
+  return publicFolders.some((folder) => {
+    const lowerFolder = folder.toLowerCase();
+    return lowerPath === lowerFolder || lowerPath.startsWith(`${lowerFolder}/`);
+  });
 }
 
 export const onRequest: PagesFunction<{

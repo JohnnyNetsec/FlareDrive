@@ -31,7 +31,7 @@ Steps:
    - Select `Docusaurus` framework preset
    - Set `WEBDAV_USERNAME` and `WEBDAV_PASSWORD`
    - (Optional) Set `WEBDAV_PUBLIC_READ` to `1` to enable public read for the entire bucket
-   - (Optional) Set `WEBDAV_PUBLIC_FOLDERS` to a comma-separated list of folder paths (e.g. `guest,test`) to make only those folders publicly readable, without exposing the rest of the bucket. Files inside those folders can be viewed/shared without login; everything else still requires the WebDAV credentials.
+   - (Optional) Set `WEBDAV_PUBLIC_FOLDERS` to a comma-separated list of folder paths (e.g. `guest,test`) to make only those folders publicly readable, without exposing the rest of the bucket. Matching is case-insensitive (`Guest`, `GUEST`, etc. all count). Files inside those folders can be viewed/shared without login; everything else — including uploading, deleting, or renaming files, even inside a public folder — still requires the WebDAV credentials.
 2. After initial deployment, bind your R2 bucket to `BUCKET` variable
 3. Retry deployment in `Deployments` page to apply the changes
 4. (Optional) Add a custom domain
