@@ -15,10 +15,13 @@ import {
   Check as CheckIcon,
   Clear as ClearIcon,
   GitHub as GitHubIcon,
+  Logout as LogoutIcon,
   MoreHoriz as MoreHorizIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
 import { AUTHOR_NAME, GITHUB_URL, copyrightYearRange } from "./copyright";
+import { logout } from "./app/transfer";
+import { Notice } from "./app/utils";
 import type { SortKey } from "./App";
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -33,12 +36,14 @@ function Header({
   sortBy,
   onSortChange,
   setShowProgressDialog,
+  onNotify,
 }: {
   search: string;
   onSearchChange: (newSearch: string) => void;
   sortBy: SortKey;
   onSortChange: (sortBy: SortKey) => void;
   setShowProgressDialog: (show: boolean) => void;
+  onNotify: (error: Error) => void;
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -118,6 +123,23 @@ function Header({
           }}
         >
           Progress
+        </MenuItem>
+        <MenuItem
+          onClick={async () => {
+            setAnchorEl(null);
+            await logout();
+            onNotify(
+              new Notice(
+                "Logged out. You'll be asked to sign in again next time you upload, delete, or manage folders.",
+                "success"
+              )
+            );
+          }}
+        >
+          <ListItemIcon>
+            <LogoutIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Log Out</ListItemText>
         </MenuItem>
       </Menu>
     </Toolbar>

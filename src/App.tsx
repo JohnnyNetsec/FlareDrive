@@ -46,6 +46,7 @@ function App() {
             sortBy={sortBy}
             onSortChange={setSortBy}
             setShowProgressDialog={setShowProgressDialog}
+            onNotify={setError}
           />
           <Main search={search} sortBy={sortBy} onError={setError} />
           <Footer />

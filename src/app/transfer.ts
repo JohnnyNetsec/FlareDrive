@@ -26,6 +26,31 @@ export function describeHttpError(status: number, action: string): string {
   }
 }
 
+// There's no server-side session to end for HTTP Basic Auth, so "logging
+// out" means making the browser discard the credentials it cached. Sending
+// deliberately wrong credentials through XMLHttpRequest.open()'s user/password
+// arguments (rather than a manually-set Authorization header, which the
+// browser's credential cache ignores) causes most browsers to drop the
+// previously cached valid credentials for this origin, so the next
+// auth-requiring action prompts fresh. The target path always requires auth
+// and never actually deletes anything real, since auth is checked before the
+// request ever reaches the delete handler.
+export function logout(): Promise<void> {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(
+      "DELETE",
+      "/webdav/_$flaredrive$/__logout__",
+      true,
+      "logout",
+      Math.random().toString(36)
+    );
+    xhr.onloadend = () => resolve();
+    xhr.onerror = () => resolve();
+    xhr.send();
+  });
+}
+
 export async function fetchPath(path: string) {
   const res = await fetch(`${WEBDAV_ENDPOINT}${encodeKey(path)}`, {
     method: "PROPFIND",
