@@ -8,12 +8,59 @@ Maintained by [NETSEC](https://51sec.org).
 
 ## Features
 
-- Upload large files
-- Create folders
-- Search files
-- Image/video/PDF thumbnails
-- WebDAV endpoint
+### File management
+
+- Upload large files (chunked upload for files ≥100MB)
 - Drag and drop upload
+- Create folders
+- Move and Copy files/folders between folders, via a folder-picker dialog
+- Rename, delete (with confirmation), and multi-select all of the above
+- Search files by name
+- Sort by Name, Date modified, or Size, with an ascending/descending toggle
+- Three view modes: Large icons, Small icons, and a Details table
+  (Name / Date modified / Type / Size), like a desktop file explorer
+- Image/video/PDF thumbnails
+- Full-screen image/video preview (lightbox) with prev/next navigation,
+  instead of opening a new tab
+- Selection shortcuts: right-click or long-press (touch) to select,
+  Ctrl/Cmd-click to toggle one item, Shift-click for a range, "Select all",
+  and keyboard shortcuts (Delete/Backspace, Escape, Ctrl/Cmd+A)
+- Item count and total size shown for the current folder
+- WebDAV endpoint for use with any WebDAV-compatible client
+
+### Sharing & access control
+
+- Share a direct link to a file (native share sheet on mobile, clipboard
+  copy with a fallback prompt on desktop)
+- `WEBDAV_PUBLIC_FOLDERS`: make only specific folders publicly viewable
+  without login, while everything else (and all uploads/edits) still
+  requires the WebDAV credentials
+- `WEBDAV_PUBLIC_READ`: make the entire bucket publicly viewable
+- The root folder listing always loads without a login prompt, regardless
+  of the above settings
+- Log Out option to make the browser forget cached WebDAV credentials
+
+### Interface
+
+- Dark / light theme toggle (persisted across visits)
+- Success and error notifications for every action (upload, delete,
+  rename, move, copy, folder creation, login/logout), with specific
+  messages for authentication/permission/server errors instead of
+  silent failures
+- Copyright/author info in the header, footer, README, and source files
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| Right-click / long-press | Select an item |
+| Ctrl/Cmd + click | Toggle a single item |
+| Shift + click | Select a range |
+| Ctrl/Cmd + A | Select all |
+| Delete / Backspace | Delete the current selection (with confirmation) |
+| Escape | Clear the current selection |
+| ← / → (in image preview) | Previous / next file |
+| Escape (in image preview) | Close preview |
 
 ## Usage
 
