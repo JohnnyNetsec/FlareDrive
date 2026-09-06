@@ -7,15 +7,34 @@ import { TransferTask } from "./transferQueue";
 
 const WEBDAV_ENDPOINT = "/webdav/";
 
+export function describeHttpError(status: number, action: string): string {
+  switch (status) {
+    case 401:
+      return `${action} failed: authentication required (401). Sign in with the WebDAV username/password when prompted.`;
+    case 403:
+      return `${action} failed: access denied (403).`;
+    case 404:
+      return `${action} failed: not found (404).`;
+    case 409:
+      return `${action} failed: conflict (409) — the destination may already exist.`;
+    case 412:
+      return `${action} failed: precondition failed (412).`;
+    default:
+      if (status >= 500)
+        return `${action} failed: server error (${status}). Please try again later.`;
+      return `${action} failed (${status}).`;
+  }
+}
+
 export async function fetchPath(path: string) {
   const res = await fetch(`${WEBDAV_ENDPOINT}${encodeKey(path)}`, {
     method: "PROPFIND",
     headers: { Depth: "1" },
   });
 
-  if (!res.ok) throw new Error("Failed to fetch");
+  if (!res.ok) throw new Error(describeHttpError(res.status, "List folder"));
   if (!res.headers.get("Content-Type")?.includes("application/xml"))
-    throw new Error("Invalid response");
+    throw new Error("List folder failed: invalid response from server.");
 
   const parser = new DOMParser();
   const text = await res.text();
@@ -169,9 +188,7 @@ export async function multipartUpload(
     method: "POST",
   });
   if (!uploadResponse.ok)
-    throw new Error(
-      `Upload failed: ${uploadResponse.status} ${await uploadResponse.text()}`
-    );
+    throw new Error(describeHttpError(uploadResponse.status, "Upload"));
   const { uploadId } = await uploadResponse.json<{ uploadId: string }>();
   const totalChunks = Math.ceil(file.size / SIZE_LIMIT);
 
@@ -213,9 +230,7 @@ export async function multipartUpload(
           .catch(uploadPart);
       const response = await [1, 2].reduce(retryReducer, uploadPart());
       if (!response.ok)
-        throw new Error(
-          `Upload failed: ${response.status} ${await response.text()}`
-        );
+        throw new Error(describeHttpError(response.status, "Upload"));
       return { partNumber: i, etag: response.headers.get("etag")! };
     })
   );
@@ -225,7 +240,8 @@ export async function multipartUpload(
     method: "POST",
     body: JSON.stringify({ parts: uploadedParts }),
   });
-  if (!response.ok) throw new Error(await response.text());
+  if (!response.ok)
+    throw new Error(describeHttpError(response.status, "Upload"));
   return response;
 }
 
@@ -241,7 +257,7 @@ export async function copyPaste(source: string, target: string, move = false) {
   });
   if (!response.ok)
     throw new Error(
-      `${move ? "Rename" : "Copy"} failed: ${response.status} ${await response.text()}`
+      describeHttpError(response.status, move ? "Rename" : "Copy")
     );
 }
 
@@ -256,9 +272,7 @@ export async function createFolder(cwd: string) {
   const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(folderKey)}`;
   const response = await fetch(uploadUrl, { method: "MKCOL" });
   if (!response.ok)
-    throw new Error(
-      `Create folder failed: ${response.status} ${await response.text()}`
-    );
+    throw new Error(describeHttpError(response.status, "Create folder"));
 }
 
 export async function processTransferTask({
@@ -312,7 +326,7 @@ export async function processTransferTask({
       onUploadProgress: onTaskProgress,
     });
     if (!response.ok)
-      throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+      throw new Error(describeHttpError(response.status, "Upload"));
     return response;
   }
 }

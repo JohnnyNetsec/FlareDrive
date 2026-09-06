@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 import { ThemeProvider } from "@emotion/react";
 import {
+  Alert,
   createTheme,
   CssBaseline,
   GlobalStyles,
@@ -14,6 +15,7 @@ import Footer from "./Footer";
 import Header from "./Header";
 import Main from "./Main";
 import ProgressDialog from "./ProgressDialog";
+import { Notice } from "./app/utils";
 import { TransferQueueProvider } from "./app/transferQueue";
 
 const globalStyles = (
@@ -44,11 +46,22 @@ function App() {
           <Footer />
         </Stack>
         <Snackbar
-          autoHideDuration={5000}
+          autoHideDuration={8000}
           open={Boolean(error)}
-          message={error?.message}
-          onClose={() => setError(null)}
-        />
+          onClose={(_, reason) => {
+            if (reason !== "clickaway") setError(null);
+          }}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            severity={error instanceof Notice ? error.severity : "error"}
+            variant="filled"
+            onClose={() => setError(null)}
+            sx={{ maxWidth: 480 }}
+          >
+            {error?.message}
+          </Alert>
+        </Snackbar>
         <ProgressDialog
           open={showProgressDialog}
           onClose={() => setShowProgressDialog(false)}

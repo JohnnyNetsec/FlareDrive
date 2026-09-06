@@ -16,7 +16,8 @@ import FileGrid, { encodeKey, FileItem, isDirectory } from "./FileGrid";
 import MultiSelectToolbar from "./MultiSelectToolbar";
 import UploadDrawer, { UploadFab } from "./UploadDrawer";
 import TextPadDrawer from "./TextPadDrawer";
-import { copyPaste, fetchPath } from "./app/transfer";
+import { copyPaste, describeHttpError, fetchPath } from "./app/transfer";
+import { Notice } from "./app/utils";
 import { useTransferQueue, useUploadEnqueue } from "./app/transferQueue";
 
 // Centered helper
@@ -266,15 +267,23 @@ function Main({
             .join("\n");
           const confirmMessage = "Delete the following file(s) permanently?";
           if (!window.confirm(`${confirmMessage}\n${filenames}`)) return;
+          let firstFailureStatus: number | null = null;
           const failed: string[] = [];
           for (const key of multiSelected) {
             const response = await fetch(`/webdav/${encodeKey(key)}`, {
               method: "DELETE",
             });
-            if (!response.ok) failed.push(key.split("/").pop()!);
+            if (!response.ok) {
+              failed.push(key.split("/").pop()!);
+              firstFailureStatus ??= response.status;
+            }
           }
           if (failed.length)
-            onError(new Error(`Failed to delete: ${failed.join(", ")}`));
+            onError(
+              new Error(
+                `${describeHttpError(firstFailureStatus!, "Delete")} (${failed.join(", ")})`
+              )
+            );
           fetchFiles();
         }}
         onShare={async () => {
@@ -297,7 +306,7 @@ function Main({
           if (navigator.clipboard?.writeText) {
             try {
               await navigator.clipboard.writeText(shareUrl);
-              onError(new Error("Link copied to clipboard"));
+              onError(new Notice("Link copied to clipboard", "success"));
               return;
             } catch (error) {
               // Fall through to the prompt fallback below.
