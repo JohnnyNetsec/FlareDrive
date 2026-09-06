@@ -23,6 +23,7 @@ const globalStyles = (
 );
 
 export type SortKey = "name" | "date" | "size";
+export type SortDirection = "asc" | "desc";
 export type ThemeMode = "light" | "dark";
 export type ViewMode = "large" | "small" | "details";
 
@@ -37,6 +38,7 @@ function readStored<T extends string>(key: string, fallback: T): T {
 function App() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [themeMode, setThemeMode] = useState<ThemeMode>(() =>
     readStored("flaredrive-theme", "light")
   );
@@ -76,7 +78,18 @@ function App() {
             search={search}
             onSearchChange={(newSearch: string) => setSearch(newSearch)}
             sortBy={sortBy}
-            onSortChange={setSortBy}
+            onSortChange={(key) => {
+              if (key === sortBy) {
+                setSortDirection((dir) => (dir === "asc" ? "desc" : "asc"));
+              } else {
+                setSortBy(key);
+                setSortDirection("asc");
+              }
+            }}
+            sortDirection={sortDirection}
+            onToggleSortDirection={() =>
+              setSortDirection((dir) => (dir === "asc" ? "desc" : "asc"))
+            }
             viewMode={viewMode}
             onViewModeChange={setViewMode}
             themeMode={themeMode}
@@ -87,6 +100,7 @@ function App() {
           <Main
             search={search}
             sortBy={sortBy}
+            sortDirection={sortDirection}
             viewMode={viewMode}
             onError={setError}
           />

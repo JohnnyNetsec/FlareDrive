@@ -4,10 +4,12 @@ import React, { useState } from "react";
 import { IconButton, Menu, MenuItem, Slide, Toolbar } from "@mui/material";
 import {
   Close as CloseIcon,
+  ContentCopy as ContentCopyIcon,
   Delete as DeleteIcon,
   DriveFileMove as DriveFileMoveIcon,
   Download as DownloadIcon,
   MoreHoriz as MoreHorizIcon,
+  SelectAll as SelectAllIcon,
 } from "@mui/icons-material";
 
 function MultiSelectToolbar({
@@ -18,6 +20,8 @@ function MultiSelectToolbar({
   onDelete,
   onShare,
   onMove,
+  onCopy,
+  onSelectAll,
 }: {
   multiSelected: string[] | null;
   onClose: () => void;
@@ -26,6 +30,8 @@ function MultiSelectToolbar({
   onDelete: () => void;
   onShare: () => void;
   onMove: () => void;
+  onCopy: () => void;
+  onSelectAll: () => void;
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -63,14 +69,18 @@ function MultiSelectToolbar({
         >
           <DriveFileMoveIcon />
         </IconButton>
+        <IconButton
+          color="primary"
+          disabled={!multiSelected?.length}
+          onClick={onCopy}
+        >
+          <ContentCopyIcon />
+        </IconButton>
         <IconButton color="primary" onClick={onDelete}>
           <DeleteIcon />
         </IconButton>
         <IconButton
           color="primary"
-          disabled={
-            multiSelected?.length !== 1 || multiSelected[0].endsWith("/")
-          }
           onClick={(e) => setAnchorEl(e.currentTarget)}
         >
           <MoreHorizIcon />
@@ -81,10 +91,33 @@ function MultiSelectToolbar({
             open={Boolean(anchorEl)}
             onClose={() => setAnchorEl(null)}
           >
-            {multiSelected.length === 1 && (
+            <MenuItem
+              onClick={() => {
+                setAnchorEl(null);
+                onSelectAll();
+              }}
+            >
+              <SelectAllIcon fontSize="small" sx={{ marginRight: 1 }} />
+              Select all
+            </MenuItem>
+            {multiSelected.length === 1 && !multiSelected[0].endsWith("/") && (
               <React.Fragment>
-                <MenuItem onClick={onRename}>Rename</MenuItem>
-                <MenuItem onClick={onShare}>Share</MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setAnchorEl(null);
+                    onRename();
+                  }}
+                >
+                  Rename
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setAnchorEl(null);
+                    onShare();
+                  }}
+                >
+                  Share
+                </MenuItem>
               </React.Fragment>
             )}
           </Menu>

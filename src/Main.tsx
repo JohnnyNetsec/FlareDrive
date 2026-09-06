@@ -12,21 +12,29 @@ import {
   Box,
   Breadcrumbs,
   Button,
-  CircularProgress,
   Link,
+  Skeleton,
   Typography,
 } from "@mui/material";
 import { Home as HomeIcon, NoteAdd as NoteAddIcon } from "@mui/icons-material";
 
+import ConfirmDialog from "./ConfirmDialog";
 import FileGrid, { encodeKey, FileItem, isDirectory } from "./FileGrid";
 import FolderPickerDialog from "./FolderPickerDialog";
+import ImagePreview from "./ImagePreview";
 import MultiSelectToolbar from "./MultiSelectToolbar";
+import PromptDialog from "./PromptDialog";
 import UploadDrawer, { UploadFab } from "./UploadDrawer";
 import TextPadDrawer from "./TextPadDrawer";
 import { copyPaste, describeHttpError, fetchPath } from "./app/transfer";
-import { Notice } from "./app/utils";
+import { humanReadableSize, Notice } from "./app/utils";
 import { useTransferQueue, useUploadEnqueue } from "./app/transferQueue";
-import type { SortKey, ViewMode } from "./App";
+import type { SortDirection, SortKey, ViewMode } from "./App";
+
+function isPreviewable(file: FileItem) {
+  const contentType = file.httpMetadata?.contentType ?? "";
+  return contentType.startsWith("image/") || contentType.startsWith("video/");
+}
 
 // Centered helper
 function Centered({ children }: { children: React.ReactNode }) {
@@ -119,15 +127,33 @@ function DropZone({
   );
 }
 
+function LoadingSkeleton() {
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, padding: 2 }}>
+      {Array.from({ length: 12 }, (_, i) => (
+        <Skeleton
+          key={i}
+          variant="rounded"
+          width={160}
+          height={72}
+          sx={{ flexGrow: 1, maxWidth: 220 }}
+        />
+      ))}
+    </Box>
+  );
+}
+
 // Main Component
 function Main({
   search,
   sortBy,
+  sortDirection,
   viewMode,
   onError,
 }: {
   search: string;
   sortBy: SortKey;
+  sortDirection: SortDirection;
   viewMode: ViewMode;
   onError: (error: Error) => void;
 }) {
@@ -137,8 +163,13 @@ function Main({
   const [multiSelected, setMultiSelected] = useState<string[] | null>(null);
   const [showUploadDrawer, setShowUploadDrawer] = useState(false);
   const [showTextPadDrawer, setShowTextPadDrawer] = useState(false);
-  const [showMovePicker, setShowMovePicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<"move" | "copy" | null>(null);
+  const [renameTarget, setRenameTarget] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [previewKey, setPreviewKey] = useState<string | null>(null);
   const [lastUploadKey, setLastUploadKey] = useState<string | null>(null);
+
+  const lastSelectedKeyRef = useRef<string | null>(null);
 
   const transferQueue = useTransferQueue();
   const uploadEnqueue = useUploadEnqueue();
@@ -195,16 +226,20 @@ function Main({
           file.key.toLowerCase().includes(search.toLowerCase())
         )
       : files;
+    const direction = sortDirection === "asc" ? 1 : -1;
     const compareBySortKey = (a: FileItem, b: FileItem) => {
       switch (sortBy) {
         case "date":
           return (
-            new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime()
+            direction *
+            (new Date(a.uploaded).getTime() - new Date(b.uploaded).getTime())
           );
         case "size":
-          return b.size - a.size;
+          return direction * (a.size - b.size);
         default:
-          return a.key.localeCompare(b.key, undefined, { numeric: true });
+          return (
+            direction * a.key.localeCompare(b.key, undefined, { numeric: true })
+          );
       }
     };
     return [...matches].sort((a, b) =>
@@ -214,9 +249,21 @@ function Main({
           ? -1
           : 1
     );
-  }, [files, search, sortBy]);
+  }, [files, search, sortBy, sortDirection]);
+
+  const previewableFiles = useMemo(
+    () => filteredFiles.filter((file) => !isDirectory(file) && isPreviewable(file)),
+    [filteredFiles]
+  );
+
+  const { itemCount, totalSize } = useMemo(() => {
+    let size = 0;
+    for (const file of filteredFiles) if (!isDirectory(file)) size += file.size;
+    return { itemCount: filteredFiles.length, totalSize: size };
+  }, [filteredFiles]);
 
   const handleMultiSelect = useCallback((key: string) => {
+    lastSelectedKeyRef.current = key;
     setMultiSelected((prev) => {
       if (prev === null) return [key];
       if (prev.includes(key)) {
@@ -227,14 +274,126 @@ function Main({
     });
   }, []);
 
+  const handleRangeSelect = useCallback(
+    (key: string) => {
+      const keys = filteredFiles.map((file) => file.key);
+      setMultiSelected((prev) => {
+        const anchorKey = lastSelectedKeyRef.current ?? key;
+        const anchorIdx = keys.indexOf(anchorKey);
+        const targetIdx = keys.indexOf(key);
+        if (anchorIdx === -1 || targetIdx === -1) return prev ?? [key];
+        const [start, end] =
+          anchorIdx < targetIdx ? [anchorIdx, targetIdx] : [targetIdx, anchorIdx];
+        const range = keys.slice(start, end + 1);
+        return Array.from(new Set([...(prev ?? []), ...range]));
+      });
+      lastSelectedKeyRef.current = key;
+    },
+    [filteredFiles]
+  );
+
+  const handleSelectAll = useCallback(() => {
+    setMultiSelected(filteredFiles.map((file) => file.key));
+  }, [filteredFiles]);
+
+  const handleOpenFile = useCallback(
+    (file: FileItem) => {
+      if (isDirectory(file)) {
+        setCwd(file.key + "/");
+        return;
+      }
+      if (isPreviewable(file)) {
+        setPreviewKey(file.key);
+        return;
+      }
+      window.open(`/webdav/${encodeKey(file.key)}`, "_blank", "noopener,noreferrer");
+    },
+    []
+  );
+
+  const performDelete = useCallback(async () => {
+    setShowDeleteConfirm(false);
+    if (!multiSelected?.length) return;
+    let firstFailureStatus: number | null = null;
+    const failed: string[] = [];
+    for (const key of multiSelected) {
+      const response = await fetch(`/webdav/${encodeKey(key)}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        failed.push(key.split("/").pop()!);
+        firstFailureStatus ??= response.status;
+      }
+    }
+    if (failed.length)
+      onError(
+        new Error(
+          `${describeHttpError(firstFailureStatus!, "Delete")} (${failed.join(", ")})`
+        )
+      );
+    else
+      onError(new Notice(`Deleted ${multiSelected.length} item(s)`, "success"));
+    fetchFiles();
+  }, [multiSelected, onError, fetchFiles]);
+
+  // Keyboard shortcuts: Delete/Backspace to delete selection, Escape to
+  // clear it, Ctrl/Cmd+A to select all — skipped while typing in a text
+  // field, or while the image preview (which handles its own keys) is open.
+  useEffect(() => {
+    function isTypingTarget(target: EventTarget | null) {
+      const el = target as HTMLElement | null;
+      return (
+        el?.tagName === "INPUT" ||
+        el?.tagName === "TEXTAREA" ||
+        el?.isContentEditable
+      );
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (previewKey || isTypingTarget(e.target)) return;
+      if ((e.key === "Delete" || e.key === "Backspace") && multiSelected?.length) {
+        e.preventDefault();
+        setShowDeleteConfirm(true);
+      } else if (e.key === "Escape" && multiSelected !== null) {
+        setMultiSelected(null);
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
+        e.preventDefault();
+        handleSelectAll();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [multiSelected, previewKey, handleSelectAll]);
+
   return (
     <>
-      {cwd && <PathBreadcrumb path={cwd} onCwdChange={setCwd} />}
+      {!loading && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          {cwd ? (
+            <PathBreadcrumb path={cwd} onCwdChange={setCwd} />
+          ) : (
+            <Box />
+          )}
+          {itemCount > 0 && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ paddingRight: 2, whiteSpace: "nowrap" }}
+            >
+              {itemCount} item{itemCount === 1 ? "" : "s"}
+              {totalSize > 0 && ` • ${humanReadableSize(totalSize)}`}
+            </Typography>
+          )}
+        </Box>
+      )}
 
       {loading ? (
-        <Centered>
-          <CircularProgress />
-        </Centered>
+        <LoadingSkeleton />
       ) : (
         <DropZone
           onDrop={(files) => {
@@ -245,9 +404,10 @@ function Main({
         >
           <FileGrid
             files={filteredFiles}
-            onCwdChange={(newCwd: string) => setCwd(newCwd)}
+            onOpenFile={handleOpenFile}
             multiSelected={multiSelected}
             onMultiSelect={handleMultiSelect}
+            onRangeSelect={handleRangeSelect}
             viewMode={viewMode}
             emptyMessage={
               <Centered>
@@ -302,50 +462,13 @@ function Main({
           a.download = multiSelected[0].split("/").pop()!;
           a.click();
         }}
-        onRename={async () => {
+        onRename={() => {
           if (multiSelected?.length !== 1) return;
-          const newName = window.prompt("Rename to:");
-          if (!newName) return;
-          try {
-            await copyPaste(multiSelected[0], cwd + newName, true);
-            onError(new Notice(`Renamed to "${newName}"`, "success"));
-          } catch (error) {
-            onError(error as Error);
-          }
-          fetchFiles();
+          setRenameTarget(multiSelected[0]);
         }}
-        onDelete={async () => {
+        onDelete={() => {
           if (!multiSelected?.length) return;
-          const filenames = multiSelected
-            .map((key) => key.replace(/\/$/, "").split("/").pop())
-            .join("\n");
-          const confirmMessage = "Delete the following file(s) permanently?";
-          if (!window.confirm(`${confirmMessage}\n${filenames}`)) return;
-          let firstFailureStatus: number | null = null;
-          const failed: string[] = [];
-          for (const key of multiSelected) {
-            const response = await fetch(`/webdav/${encodeKey(key)}`, {
-              method: "DELETE",
-            });
-            if (!response.ok) {
-              failed.push(key.split("/").pop()!);
-              firstFailureStatus ??= response.status;
-            }
-          }
-          if (failed.length)
-            onError(
-              new Error(
-                `${describeHttpError(firstFailureStatus!, "Delete")} (${failed.join(", ")})`
-              )
-            );
-          else
-            onError(
-              new Notice(
-                `Deleted ${multiSelected.length} item(s)`,
-                "success"
-              )
-            );
-          fetchFiles();
+          setShowDeleteConfirm(true);
         }}
         onShare={async () => {
           if (multiSelected?.length !== 1) return;
@@ -378,24 +501,72 @@ function Main({
         }}
         onMove={() => {
           if (!multiSelected?.length) return;
-          setShowMovePicker(true);
+          setPickerMode("move");
+        }}
+        onCopy={() => {
+          if (!multiSelected?.length) return;
+          setPickerMode("copy");
+        }}
+        onSelectAll={handleSelectAll}
+      />
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Delete permanently?"
+        danger
+        confirmLabel="Delete"
+        message={
+          multiSelected
+            ? multiSelected
+                .map((key) => key.replace(/\/$/, "").split("/").pop())
+                .join("\n")
+            : ""
+        }
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={performDelete}
+      />
+
+      <PromptDialog
+        open={renameTarget !== null}
+        title="Rename"
+        label="New name"
+        confirmLabel="Rename"
+        defaultValue={renameTarget?.replace(/\/$/, "").split("/").pop() ?? ""}
+        onCancel={() => setRenameTarget(null)}
+        onConfirm={async (newName) => {
+          const target = renameTarget!;
+          setRenameTarget(null);
+          try {
+            await copyPaste(target, cwd + newName, true);
+            onError(new Notice(`Renamed to "${newName}"`, "success"));
+          } catch (error) {
+            onError(error as Error);
+          }
+          fetchFiles();
         }}
       />
 
       <FolderPickerDialog
-        open={showMovePicker}
+        open={pickerMode !== null}
         initialPath={cwd}
-        title={`Move ${multiSelected?.length ?? 0} item(s) to…`}
-        onClose={() => setShowMovePicker(false)}
+        title={
+          pickerMode === "copy"
+            ? `Copy ${multiSelected?.length ?? 0} item(s) to…`
+            : `Move ${multiSelected?.length ?? 0} item(s) to…`
+        }
+        onClose={() => setPickerMode(null)}
         onConfirm={async (destination) => {
-          setShowMovePicker(false);
-          if (!multiSelected?.length) return;
+          const mode = pickerMode;
+          setPickerMode(null);
+          if (!multiSelected?.length || !mode) return;
+          const move = mode === "move";
+          const actionLabel = move ? "Move" : "Copy";
           let firstError: string | null = null;
           const failed: string[] = [];
           for (const key of multiSelected) {
             const name = key.replace(/\/$/, "").split("/").pop()!;
             try {
-              await copyPaste(key, destination + name, true, "Move");
+              await copyPaste(key, destination + name, move, actionLabel);
             } catch (error) {
               failed.push(name);
               firstError ??= (error as Error).message;
@@ -406,7 +577,7 @@ function Main({
           else
             onError(
               new Notice(
-                `Moved ${multiSelected.length} item(s) to ${
+                `${actionLabel === "Move" ? "Moved" : "Copied"} ${multiSelected.length} item(s) to ${
                   destination ? `/${destination.replace(/\/$/, "")}` : "root"
                 }`,
                 "success"
@@ -415,6 +586,15 @@ function Main({
           fetchFiles();
         }}
       />
+
+      {previewKey && (
+        <ImagePreview
+          files={previewableFiles}
+          currentKey={previewKey}
+          onClose={() => setPreviewKey(null)}
+          onNavigate={setPreviewKey}
+        />
+      )}
     </>
   );
 }

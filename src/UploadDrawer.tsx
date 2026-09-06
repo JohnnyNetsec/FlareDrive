@@ -1,6 +1,6 @@
 // Copyright (c) 2024-2026 NETSEC (https://51sec.org).
 // SPDX-License-Identifier: MIT
-import React, { forwardRef, useCallback, useMemo } from "react";
+import React, { forwardRef, useCallback, useMemo, useState } from "react";
 
 import { Button, Card, Drawer, Fab, Grid, Typography } from "@mui/material";
 import {
@@ -9,6 +9,7 @@ import {
   Image as ImageIcon,
   Upload as UploadIcon,
 } from "@mui/icons-material";
+import PromptDialog from "./PromptDialog";
 import { createFolder } from "./app/transfer";
 import { Notice } from "./app/utils";
 import { useUploadEnqueue } from "./app/transferQueue";
@@ -71,6 +72,7 @@ function UploadDrawer({
   onError: (error: Error) => void;
 }) {
   const uploadEnqueue = useUploadEnqueue();
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
 
   const handleUpload = useCallback(
     (action: string) => () => {
@@ -106,57 +108,72 @@ function UploadDrawer({
   const uploadFile = useMemo(() => handleUpload("file"), [handleUpload]);
 
   return (
-    <Drawer
-      anchor="bottom"
-      open={open}
-      onClose={() => setOpen(false)}
-      PaperProps={{ sx: { borderRadius: "16px 16px 0 0" } }}
-    >
-      <Card sx={{ padding: 2 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={3}>
-            <IconCaptionButton
-              icon={<CameraIcon fontSize="large" />}
-              caption="Camera"
-              onClick={takePhoto}
-            />
+    <>
+      <Drawer
+        anchor="bottom"
+        open={open}
+        onClose={() => setOpen(false)}
+        PaperProps={{ sx: { borderRadius: "16px 16px 0 0" } }}
+      >
+        <Card sx={{ padding: 2 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={3}>
+              <IconCaptionButton
+                icon={<CameraIcon fontSize="large" />}
+                caption="Camera"
+                onClick={takePhoto}
+              />
+            </Grid>
+            <Grid item xs={3}>
+              <IconCaptionButton
+                icon={<ImageIcon fontSize="large" />}
+                caption="Image/Video"
+                onClick={uploadImage}
+              />
+            </Grid>
+            <Grid item xs={3}>
+              <IconCaptionButton
+                icon={<UploadIcon fontSize="large" />}
+                caption="Upload"
+                onClick={uploadFile}
+              />
+            </Grid>
+            <Grid item xs={3}>
+              <IconCaptionButton
+                icon={<CreateNewFolderIcon fontSize="large" />}
+                caption="Create Folder"
+                onClick={() => {
+                  setOpen(false);
+                  setShowCreateFolder(true);
+                }}
+              />
+            </Grid>
           </Grid>
-          <Grid item xs={3}>
-            <IconCaptionButton
-              icon={<ImageIcon fontSize="large" />}
-              caption="Image/Video"
-              onClick={uploadImage}
-            />
-          </Grid>
-          <Grid item xs={3}>
-            <IconCaptionButton
-              icon={<UploadIcon fontSize="large" />}
-              caption="Upload"
-              onClick={uploadFile}
-            />
-          </Grid>
-          <Grid item xs={3}>
-            <IconCaptionButton
-              icon={<CreateNewFolderIcon fontSize="large" />}
-              caption="Create Folder"
-              onClick={async () => {
-                setOpen(false);
-                try {
-                  const folderName = await createFolder(cwd);
-                  if (folderName)
-                    onError(
-                      new Notice(`Folder "${folderName}" created`, "success")
-                    );
-                } catch (error) {
-                  onError(error as Error);
-                }
-                onUpload();
-              }}
-            />
-          </Grid>
-        </Grid>
-      </Card>
-    </Drawer>
+        </Card>
+      </Drawer>
+
+      <PromptDialog
+        open={showCreateFolder}
+        title="Create folder"
+        label="Folder name"
+        confirmLabel="Create"
+        onCancel={() => setShowCreateFolder(false)}
+        onConfirm={async (folderName) => {
+          setShowCreateFolder(false);
+          if (folderName.includes("/")) {
+            onError(new Error(`Invalid folder name: "${folderName}"`));
+            return;
+          }
+          try {
+            await createFolder(cwd, folderName);
+            onError(new Notice(`Folder "${folderName}" created`, "success"));
+          } catch (error) {
+            onError(error as Error);
+          }
+          onUpload();
+        }}
+      />
+    </>
   );
 }
 

@@ -15,6 +15,8 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import {
+  ArrowDownward as ArrowDownwardIcon,
+  ArrowUpward as ArrowUpwardIcon,
   Check as CheckIcon,
   Clear as ClearIcon,
   DarkMode as DarkModeIcon,
@@ -27,7 +29,7 @@ import {
 import { AUTHOR_NAME, GITHUB_URL, copyrightYearRange } from "./copyright";
 import { logout } from "./app/transfer";
 import { Notice } from "./app/utils";
-import type { SortKey, ThemeMode, ViewMode } from "./App";
+import type { SortDirection, SortKey, ThemeMode, ViewMode } from "./App";
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
@@ -46,6 +48,8 @@ function Header({
   onSearchChange,
   sortBy,
   onSortChange,
+  sortDirection,
+  onToggleSortDirection,
   viewMode,
   onViewModeChange,
   themeMode,
@@ -57,6 +61,8 @@ function Header({
   onSearchChange: (newSearch: string) => void;
   sortBy: SortKey;
   onSortChange: (sortBy: SortKey) => void;
+  sortDirection: SortDirection;
+  onToggleSortDirection: () => void;
   viewMode: ViewMode;
   onViewModeChange: (viewMode: ViewMode) => void;
   themeMode: ThemeMode;
@@ -95,6 +101,22 @@ function Header({
       />
 
       <Box sx={{ flexGrow: 1 }} />
+
+      <Tooltip
+        title={`Sort ${sortDirection === "asc" ? "ascending" : "descending"} (click to reverse)`}
+      >
+        <IconButton
+          aria-label="Toggle sort direction"
+          color="inherit"
+          onClick={onToggleSortDirection}
+        >
+          {sortDirection === "asc" ? (
+            <ArrowUpwardIcon fontSize="small" />
+          ) : (
+            <ArrowDownwardIcon fontSize="small" />
+          )}
+        </IconButton>
+      </Tooltip>
 
       <Tooltip title="Toggle dark / light theme">
         <Switch
@@ -162,7 +184,10 @@ function Header({
             <ListItemIcon>
               {sortBy === key && <CheckIcon fontSize="small" />}
             </ListItemIcon>
-            <ListItemText>Sort by {label}</ListItemText>
+            <ListItemText>
+              Sort by {label}
+              {sortBy === key && (sortDirection === "asc" ? " ↑" : " ↓")}
+            </ListItemText>
           </MenuItem>
         ))}
         <Divider />

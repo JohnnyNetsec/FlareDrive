@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import MimeIcon from "./MimeIcon";
 import { humanReadableSize } from "./app/utils";
+import { useLongPress } from "./useLongPress";
 import type { ViewMode } from "./App";
 
 export interface FileItem {
@@ -72,36 +73,69 @@ function Thumbnail({
   );
 }
 
+// Plain helper (not a hook) — combines click/context-menu handling with the
+// long-press touch handlers produced by the single useLongPress() factory
+// call in the component below. Safe to call once per rendered item.
+function getItemGestures({
+  file,
+  multiSelected,
+  onOpenFile,
+  onMultiSelect,
+  onRangeSelect,
+  getLongPressHandlers,
+}: {
+  file: FileItem;
+  multiSelected: string[] | null;
+  onOpenFile: (file: FileItem) => void;
+  onMultiSelect: (key: string) => void;
+  onRangeSelect: (key: string) => void;
+  getLongPressHandlers: (onLongPress: () => void) => object;
+}) {
+  const onClick = (e: React.MouseEvent) => {
+    if (e.shiftKey) {
+      onRangeSelect(file.key);
+      return;
+    }
+    if (e.ctrlKey || e.metaKey) {
+      onMultiSelect(file.key);
+      return;
+    }
+    if (multiSelected !== null) onMultiSelect(file.key);
+    else onOpenFile(file);
+  };
+
+  const onContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onMultiSelect(file.key);
+  };
+
+  return {
+    onClick,
+    onContextMenu,
+    ...getLongPressHandlers(() => onMultiSelect(file.key)),
+  };
+}
+
 function FileGrid({
   files,
-  onCwdChange,
+  onOpenFile,
   multiSelected,
   onMultiSelect,
+  onRangeSelect,
   emptyMessage,
   viewMode = "large",
 }: {
   files: FileItem[];
-  onCwdChange: (newCwd: string) => void;
+  onOpenFile: (file: FileItem) => void;
   multiSelected: string[] | null;
   onMultiSelect: (key: string) => void;
+  onRangeSelect: (key: string) => void;
   emptyMessage?: React.ReactNode;
   viewMode?: ViewMode;
 }) {
+  const getLongPressHandlers = useLongPress();
+
   if (files.length === 0) return <>{emptyMessage}</>;
-
-  const handleOpen = (file: FileItem) => {
-    if (multiSelected !== null) {
-      onMultiSelect(file.key);
-    } else if (isDirectory(file)) {
-      onCwdChange(file.key + "/");
-    } else
-      window.open(`/webdav/${encodeKey(file.key)}`, "_blank", "noopener,noreferrer");
-  };
-
-  const handleContextMenu = (e: React.MouseEvent, file: FileItem) => {
-    e.preventDefault();
-    onMultiSelect(file.key);
-  };
 
   if (viewMode === "details") {
     return (
@@ -121,9 +155,15 @@ function FileGrid({
                 key={file.key}
                 hover
                 selected={multiSelected?.includes(file.key)}
-                onClick={() => handleOpen(file)}
-                onContextMenu={(e) => handleContextMenu(e, file)}
                 sx={{ cursor: "pointer", userSelect: "none" }}
+                {...getItemGestures({
+                  file,
+                  multiSelected,
+                  onOpenFile,
+                  onMultiSelect,
+                  onRangeSelect,
+                  getLongPressHandlers,
+                })}
               >
                 <TableCell
                   sx={{
@@ -161,9 +201,15 @@ function FileGrid({
         <Grid item key={file.key} {...GRID_BREAKPOINTS[viewMode]}>
           <ListItemButton
             selected={multiSelected?.includes(file.key)}
-            onClick={() => handleOpen(file)}
-            onContextMenu={(e) => handleContextMenu(e, file)}
             sx={{ userSelect: "none" }}
+            {...getItemGestures({
+              file,
+              multiSelected,
+              onOpenFile,
+              onMultiSelect,
+              onRangeSelect,
+              getLongPressHandlers,
+            })}
           >
             <ListItemIcon>
               <Thumbnail file={file} size={iconSize} />

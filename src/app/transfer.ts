@@ -293,19 +293,12 @@ export async function copyPaste(
     );
 }
 
-export async function createFolder(cwd: string): Promise<string | null> {
-  const folderName = window.prompt("Folder name");
-  if (!folderName) return null;
-  if (folderName.includes("/")) {
-    window.alert("Invalid folder name");
-    return null;
-  }
+export async function createFolder(cwd: string, folderName: string) {
   const folderKey = `${cwd}${folderName}`;
   const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(folderKey)}`;
   const response = await fetch(uploadUrl, { method: "MKCOL" });
   if (!response.ok)
     throw new Error(describeHttpError(response.status, "Create folder"));
-  return folderName;
 }
 
 export async function processTransferTask({
