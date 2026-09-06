@@ -1,13 +1,9 @@
+// Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 FlareDrive contributors.
+// SPDX-License-Identifier: MIT
 import { Box, Link, Typography } from "@mui/material";
-
-const GITHUB_URL = "https://github.com/JohnnyNetsec/FlareDrive";
-const FIRST_YEAR = 2024;
+import { GITHUB_URL, copyrightYearRange } from "./copyright";
 
 function Footer() {
-  const currentYear = new Date().getFullYear();
-  const yearLabel =
-    currentYear > FIRST_YEAR ? `${FIRST_YEAR}–${currentYear}` : `${FIRST_YEAR}`;
-
   return (
     <Box
       component="footer"
@@ -19,7 +15,7 @@ function Footer() {
       }}
     >
       <Typography variant="caption" color="text.secondary">
-        © {yearLabel} FlareDrive ·{" "}
+        © {copyrightYearRange()} FlareDrive ·{" "}
         <Link
           href={GITHUB_URL}
           target="_blank"

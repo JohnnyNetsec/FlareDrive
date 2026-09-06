@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 FlareDrive contributors.
+// SPDX-License-Identifier: MIT
 export interface RequestHandlerParams {
   bucket: R2Bucket;
   path: string;

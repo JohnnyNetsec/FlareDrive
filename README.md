@@ -57,3 +57,8 @@ WebDAV related code is based on [r2-webdav](
 ) project by [abersheeran](
   https://github.com/abersheeran
 ).
+
+## License
+
+Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 FlareDrive contributors.
+Licensed under the [MIT License](LICENSE).

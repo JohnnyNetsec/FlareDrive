@@ -1,11 +1,20 @@
-import { IconButton, InputBase, Menu, MenuItem, Toolbar } from "@mui/material";
+// Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 FlareDrive contributors.
+// SPDX-License-Identifier: MIT
+import {
+  IconButton,
+  InputBase,
+  Menu,
+  MenuItem,
+  Toolbar,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { useState } from "react";
 import {
   GitHub as GitHubIcon,
   MoreHoriz as MoreHorizIcon,
 } from "@mui/icons-material";
-
-const GITHUB_URL = "https://github.com/JohnnyNetsec/FlareDrive";
+import { GITHUB_URL, copyrightYearRange } from "./copyright";
 
 function Header({
   search,
@@ -20,6 +29,15 @@ function Header({
 
   return (
     <Toolbar disableGutters sx={{ padding: 1 }}>
+      <Tooltip title={`© ${copyrightYearRange()} FlareDrive`}>
+        <Typography
+          variant="subtitle1"
+          noWrap
+          sx={{ paddingX: 1, cursor: "default" }}
+        >
+          FlareDrive
+        </Typography>
+      </Tooltip>
       <InputBase
         size="small"
         fullWidth

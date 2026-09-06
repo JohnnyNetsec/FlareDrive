@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 FlareDrive contributors.
+// SPDX-License-Identifier: MIT
 import { notFound, parseBucketPath } from "./utils";
 import { handleRequestCopy } from "./copy";
 import { handleRequestDelete } from "./delete";
@@ -80,17 +82,15 @@ export const onRequest: PagesFunction<{
       return new Response("WebDAV protocol is not enabled", { status: 403 });
 
     const auth = request.headers.get("Authorization");
-    if (!auth) {
+    const expectedAuth = `Basic ${btoa(
+      `${env.WEBDAV_USERNAME}:${env.WEBDAV_PASSWORD}`
+    )}`;
+    if (!auth || auth !== expectedAuth) {
       return new Response("Unauthorized", {
         status: 401,
         headers: { "WWW-Authenticate": `Basic realm="WebDAV"` },
       });
     }
-    const expectedAuth = `Basic ${btoa(
-      `${env.WEBDAV_USERNAME}:${env.WEBDAV_PASSWORD}`
-    )}`;
-    if (auth !== expectedAuth)
-      return new Response("Unauthorized", { status: 401 });
   }
 
   if (!bucket) return notFound();

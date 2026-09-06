@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 FlareDrive contributors.
+// SPDX-License-Identifier: MIT
 import { RequestHandlerParams, ROOT_OBJECT } from "./utils";
 
 export async function handleRequestMkcol({
