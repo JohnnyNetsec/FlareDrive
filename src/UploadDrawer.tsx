@@ -10,6 +10,7 @@ import {
   Upload as UploadIcon,
 } from "@mui/icons-material";
 import { createFolder } from "./app/transfer";
+import { Notice } from "./app/utils";
 import { useUploadEnqueue } from "./app/transferQueue";
 
 function IconCaptionButton({
@@ -141,7 +142,11 @@ function UploadDrawer({
               onClick={async () => {
                 setOpen(false);
                 try {
-                  await createFolder(cwd);
+                  const folderName = await createFolder(cwd);
+                  if (folderName)
+                    onError(
+                      new Notice(`Folder "${folderName}" created`, "success")
+                    );
                 } catch (error) {
                   onError(error as Error);
                 }

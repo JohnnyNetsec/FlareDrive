@@ -1,7 +1,13 @@
 // Copyright (c) 2024-2026 NETSEC (https://51sec.org).
 // SPDX-License-Identifier: MIT
 // Main.tsx
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Box,
   Breadcrumbs,
@@ -160,6 +166,25 @@ function Main({
     }
   }, [cwd, fetchFiles, lastUploadKey, transferQueue]);
 
+  const notifiedTaskCount = useRef(0);
+  useEffect(() => {
+    for (let i = notifiedTaskCount.current; i < transferQueue.length; i++) {
+      const task = transferQueue[i];
+      if (task.status === "completed") {
+        onError(new Notice(`Uploaded "${task.name}"`, "success"));
+      } else if (task.status === "failed") {
+        onError(
+          new Error(
+            `Failed to upload "${task.name}": ${task.error?.message ?? "unknown error"}`
+          )
+        );
+      } else {
+        break;
+      }
+      notifiedTaskCount.current = i + 1;
+    }
+  }, [transferQueue, onError]);
+
   const filteredFiles = useMemo(() => {
     const matches = search
       ? files.filter((file) =>
@@ -278,6 +303,7 @@ function Main({
           if (!newName) return;
           try {
             await copyPaste(multiSelected[0], cwd + newName, true);
+            onError(new Notice(`Renamed to "${newName}"`, "success"));
           } catch (error) {
             onError(error as Error);
           }
@@ -305,6 +331,13 @@ function Main({
             onError(
               new Error(
                 `${describeHttpError(firstFailureStatus!, "Delete")} (${failed.join(", ")})`
+              )
+            );
+          else
+            onError(
+              new Notice(
+                `Deleted ${multiSelected.length} item(s)`,
+                "success"
               )
             );
           fetchFiles();
