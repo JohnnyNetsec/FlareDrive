@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2026 NETSEC (https://51sec.org).
+// Copyright (c) 2026 Siyu Long, portions Copyright (c) 2024-2026 NETSEC (https://51sec.org).
 // SPDX-License-Identifier: MIT
 function arrayBufferToHex(arrayBuffer: ArrayBuffer) {
   return [...new Uint8Array(arrayBuffer)]
