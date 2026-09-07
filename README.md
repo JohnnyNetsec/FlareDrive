@@ -108,6 +108,13 @@ You must upload large files through the web interface which supports chunked upl
 
 ## Acknowledgments
 
+This project is a fork of the original [FlareDrive](
+  https://github.com/longern/FlareDrive
+) by [longern](
+  https://github.com/longern
+), which this fork's WebDAV backend, React frontend, and overall
+architecture are built on.
+
 WebDAV related code is based on [r2-webdav](
   https://github.com/abersheeran/r2-webdav
 ) project by [abersheeran](
